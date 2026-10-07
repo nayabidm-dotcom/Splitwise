@@ -1,7 +1,9 @@
+﻿import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import api from './routes.js';
 import { HttpError } from './errors.js';
+import { initSchema } from './db.js';
 
 const app = express();
 app.use(cors());
@@ -14,5 +16,15 @@ app.use((err, req, res, next) => {
   if (status === 500) console.error(err);
   res.status(status).json({ error: err.message || 'Server error' });
 });
+
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, '0.0.0.0', () => console.log(`API listening on http://0.0.0.0:${PORT}`));
+
+initSchema()
+  .then(() => {
+    console.log('Turso schema initialized');
+    app.listen(PORT, '0.0.0.0', () => console.log(`API listening on http://0.0.0.0:${PORT}`));
+  })
+  .catch((err) => {
+    console.error('Failed to init schema:', err);
+    process.exit(1);
+  });

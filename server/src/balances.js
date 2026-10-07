@@ -1,17 +1,23 @@
-import db from './db.js';
-export function groupNet(groupId) {
-  return db.prepare(`
-    SELECT user_id, SUM(net) AS net FROM (
-      SELECT paid_by AS user_id, amount_cents AS net FROM expenses WHERE group_id = ?
-      UNION ALL
-      SELECT s.user_id, -s.owed_cents FROM expense_splits s JOIN expenses e ON e.id = s.expense_id WHERE e.group_id = ?
-      UNION ALL
-      SELECT from_user, amount_cents FROM settlements WHERE group_id = ?
-      UNION ALL
-      SELECT to_user, -amount_cents FROM settlements WHERE group_id = ?
-    ) GROUP BY user_id
-  `).all(groupId, groupId, groupId, groupId);
+﻿import { client } from './db.js';
+
+export async function groupNet(groupId) {
+  const { rows } = await client.execute({
+    sql: `
+      SELECT user_id, SUM(net) AS net FROM (
+        SELECT paid_by AS user_id, amount_cents AS net FROM expenses WHERE group_id = ?
+        UNION ALL
+        SELECT s.user_id, -s.owed_cents FROM expense_splits s JOIN expenses e ON e.id = s.expense_id WHERE e.group_id = ?
+        UNION ALL
+        SELECT from_user, amount_cents FROM settlements WHERE group_id = ?
+        UNION ALL
+        SELECT to_user, -amount_cents FROM settlements WHERE group_id = ?
+      ) GROUP BY user_id
+    `,
+    args: [groupId, groupId, groupId, groupId],
+  });
+  return rows;
 }
+
 function netPairs(rows) {
   const map = new Map();
   for (const r of rows) {
@@ -29,30 +35,39 @@ function netPairs(rows) {
   }
   return out;
 }
-export function groupPairwise(groupId) {
-  const rows = db.prepare(`
-    SELECT creditor, debtor, SUM(amount) AS amount FROM (
-      SELECT e.paid_by AS creditor, s.user_id AS debtor, s.owed_cents AS amount
-      FROM expense_splits s JOIN expenses e ON e.id = s.expense_id
-      WHERE e.group_id = ? AND s.user_id <> e.paid_by
-      UNION ALL
-      SELECT to_user, from_user, amount_cents FROM settlements WHERE group_id = ?
-    ) GROUP BY creditor, debtor
-  `).all(groupId, groupId);
+
+export async function groupPairwise(groupId) {
+  const { rows } = await client.execute({
+    sql: `
+      SELECT creditor, debtor, SUM(amount) AS amount FROM (
+        SELECT e.paid_by AS creditor, s.user_id AS debtor, s.owed_cents AS amount
+        FROM expense_splits s JOIN expenses e ON e.id = s.expense_id
+        WHERE e.group_id = ? AND s.user_id <> e.paid_by
+        UNION ALL
+        SELECT to_user, from_user, amount_cents FROM settlements WHERE group_id = ?
+      ) GROUP BY creditor, debtor
+    `,
+    args: [groupId, groupId],
+  });
   return netPairs(rows);
 }
-export function userPairwise(userId) {
-  const rows = db.prepare(`
-    SELECT creditor, debtor, SUM(amount) AS amount FROM (
-      SELECT e.paid_by AS creditor, s.user_id AS debtor, s.owed_cents AS amount
-      FROM expense_splits s JOIN expenses e ON e.id = s.expense_id
-      WHERE s.user_id <> e.paid_by
-      UNION ALL
-      SELECT to_user, from_user, amount_cents FROM settlements
-    ) GROUP BY creditor, debtor
-  `).all();
+
+export async function userPairwise(userId) {
+  const { rows } = await client.execute({
+    sql: `
+      SELECT creditor, debtor, SUM(amount) AS amount FROM (
+        SELECT e.paid_by AS creditor, s.user_id AS debtor, s.owed_cents AS amount
+        FROM expense_splits s JOIN expenses e ON e.id = s.expense_id
+        WHERE s.user_id <> e.paid_by
+        UNION ALL
+        SELECT to_user, from_user, amount_cents FROM settlements
+      ) GROUP BY creditor, debtor
+    `,
+    args: [],
+  });
   return netPairs(rows).filter((p) => p.from === userId || p.to === userId);
 }
+
 export function simplifyDebts(netRows) {
   const creditors = [], debtors = [];
   for (const row of netRows) {
