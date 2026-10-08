@@ -100,12 +100,39 @@ export default function GroupPage() {
           </form>
         </motion.div>
       )}
-      <div className="tabs">
-        <button className={`tab ${tab === 'expenses' ? 'active' : ''}`} onClick={() => setTab('expenses')}>Expenses</button>
-        <button className={`tab ${tab === 'balances' ? 'active' : ''}`} onClick={() => setTab('balances')}>Balances</button>
+            <div className="tabs">
+        <button className={`tab ${tab === 'expenses' ? 'active' : ''}`} onClick={() => setTab('expenses')}>
+          Expenses
+          {tab === 'expenses' && <motion.div className="tab-underline" layoutId="tab-underline" />}
+        </button>
+        <button className={`tab ${tab === 'balances' ? 'active' : ''}`} onClick={() => setTab('balances')}>
+          Balances
+          {tab === 'balances' && <motion.div className="tab-underline" layoutId="tab-underline" />}
+        </button>
         <div className="spacer" />
-        <motion.button className="btn btn-primary btn-sm" style={{ marginBottom: 8 }} onClick={() => setShowForm(true)} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }}>+ Add expense</motion.button>
+        <motion.button
+          className="btn btn-primary btn-sm btn-add-desktop"
+          style={{ marginBottom: 8 }}
+          onClick={() => setShowForm(true)}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.94 }}
+        >
+          + Add expense
+        </motion.button>
       </div>
+
+      <motion.button
+        className="fab"
+        onClick={() => setShowForm(true)}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.9 }}
+        initial={{ scale: 0, rotate: -90 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.3 }}
+        aria-label="Add expense"
+      >
+        +
+      </motion.button>
       <AnimatePresence mode="wait">
         {tab === 'expenses' && (
           <motion.div key="expenses" initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}>

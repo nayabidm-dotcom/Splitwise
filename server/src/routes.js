@@ -7,7 +7,7 @@ import { groupNet, groupPairwise, userPairwise, simplifyDebts } from './balances
 import { HttpError } from './errors.js';
 
 const api = Router();
-
++
 function toCents(v) {
   const n = Number(v);
   if (!Number.isFinite(n) || n <= 0) throw new HttpError(400, 'Amount must be positive');

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Navigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
@@ -44,8 +45,32 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="auth-wrap">
-      <div className="card auth-card">
+    <div className="auth-wrap" style={{ position: 'relative', overflow: 'hidden' }}>
+      <motion.div
+        className="hero-shape"
+        style={{ width: 180, height: 180, background: '#1cc29f', top: '10%', left: '8%' }}
+        animate={{ y: [0, -30, 0], x: [0, 15, 0] }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="hero-shape"
+        style={{ width: 120, height: 120, background: '#4fd1b3', bottom: '15%', right: '10%' }}
+        animate={{ y: [0, 25, 0], x: [0, -20, 0] }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="hero-shape"
+        style={{ width: 90, height: 90, background: '#a5e8d4', top: '45%', right: '20%' }}
+        animate={{ y: [0, -20, 0], scale: [1, 1.15, 1] }}
+        transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="card auth-card"
+        style={{ position: 'relative', zIndex: 2 }}
+        initial={{ opacity: 0, y: 24, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.34, 1.2, 0.64, 1] }}
+      >
         <div className="brand"><span className="brand-dot" />Splitwise</div>
         <p className="muted" style={{ textAlign: 'center', marginTop: 0, marginBottom: 24 }}>
           Split expenses with friends, effortlessly.
@@ -94,7 +119,7 @@ export default function AuthPage() {
             {mode === 'login' ? 'Sign up' : 'Log in'}
           </button>
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 }
