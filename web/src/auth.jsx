@@ -20,11 +20,15 @@ export function AuthProvider({ children }) {
       const d = await api('/auth/register', { method: 'POST', body: { name, email, password } });
       setToken(d.token); setUser(d.user);
       toast.success(`Welcome, ${d.user.name}!`);
-    },
-    async logout() {
+    },  
+      async logout() {
       try { await api('/auth/logout', { method: 'POST' }); } catch {}
       setToken(null); setUser(null);
       toast.success('Logged out');
+    },
+    setTokenAndUser: (token, user) => {
+      setToken(token);
+      setUser(user);
     },
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

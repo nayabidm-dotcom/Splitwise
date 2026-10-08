@@ -1,4 +1,5 @@
-﻿import { Router } from 'express';
+﻿import { OAuth2Client } from 'google-auth-library';
+import { Router } from 'express';
 import { client } from './db.js';
 import { hashPassword, verifyPassword, createSession, deleteSession, requireAuth } from './auth.js';
 import { computeSplits, SPLIT_TYPES } from './splits.js';
@@ -100,6 +101,49 @@ api.post('/auth/logout', requireAuth, async (req, res) => {
 });
 
 api.get('/auth/me', requireAuth, (req, res) => res.json({ user: req.user }));
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+api.post('/auth/google', async (req, res) => {
+  const { idToken } = req.body || {};
+  if (!idToken) throw new HttpError(400, 'Missing Google ID token');
+
+  let payload;
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    payload = ticket.getPayload();
+  } catch (err) {
+    console.error('Google token verification failed:', err);
+    throw new HttpError(401, 'Invalid Google token');
+  }
+
+  const cleanEmail = payload.email.toLowerCase().trim();
+
+  const { rows: existing } = await client.execute({
+    sql: 'SELECT * FROM users WHERE email = ?',
+    args: [cleanEmail],
+  });
+
+  let user;
+  if (existing.length === 0) {
+    const result = await client.execute({
+      sql: 'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)',
+      args: [payload.name, cleanEmail, 'GOOGLE_AUTH'],
+    });
+    user = { id: Number(result.lastInsertRowid), name: payload.name, email: cleanEmail, upi_id: null };
+  } else {
+    user = existing[0];
+  }
+
+  const token = await createSession(user.id);
+  res.json({
+    token,
+    user: { id: user.id, name: user.name, email: user.email, upi_id: user.upi_id },
+  });
+});
 
 // ============ PROFILE ============
 api.patch('/users/me', requireAuth, async (req, res) => {
